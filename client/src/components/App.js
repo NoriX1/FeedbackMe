@@ -2,7 +2,7 @@ import React from 'react';
 
 class App extends React.Component {
     render() {
-        return <div>App</div>
+        return <a href="/auth/google">Sign in With Google</a>
     }
 }
 
