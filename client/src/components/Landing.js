@@ -2,7 +2,12 @@ import React from 'react';
 
 class Landing extends React.Component {
     render() {
-        return <div>Landing</div>;
+        return (
+            <div style={{ textAlign: 'center' }}>
+                <h1>FeedbackMe!</h1>
+                <span>Collect feedback from your users</span>
+            </div>
+        );
     }
 }
 
