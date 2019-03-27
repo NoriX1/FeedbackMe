@@ -9,6 +9,8 @@ module.exports = app => {
             description: '5$ fot 5 credits',
             source: req.body.id
         });
-        res.send(charge.outcome.seller_message);
+        req.user.credits += 5;
+        const user = await req.user.save();
+        res.send(user);
     });
 };
