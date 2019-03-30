@@ -1,3 +1,6 @@
+const _ = require('lodash');
+const { Path } = require('path-parser');
+const { URL } = require('url');
 const mongoose = require('mongoose');
 const requireLogin = require('../middlewares/requireLogin');
 const requireCredits = require('../middlewares/requireCredits');
@@ -7,6 +10,23 @@ const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 const Survey = mongoose.model('surveys');
 
 module.exports = app => {
+
+    app.post('/api/surveys/webhooks', (req, res) => {
+        const p = new Path('/api/surveys/:surveyId/:choice');
+        const events = _.chain(req.body)
+            .map(({ email, url, event }) => {
+                const match = p.test(new URL(url).pathname);
+                if (match && event === 'click') {
+                    return { email, surveyId: match.surveyId, choice: match.choice };
+                }
+            })
+            .compact() //удаляет все undefined элементы массива
+            .uniqBy('email', 'surveyId') //получить уникальные элементы по указанным ключам
+            .value();
+        console.log(events);
+        res.send({ message: 'OK' });
+    });
+
     app.post('/api/surveys', requireLogin, requireCredits, async (req, res) => {
         const { title, subject, body, recipients } = req.body;
 
