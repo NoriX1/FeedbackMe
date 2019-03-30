@@ -11,9 +11,13 @@ const Survey = mongoose.model('surveys');
 
 module.exports = app => {
 
+    app.get('/api/surveys/:surveyId/:choice', (req, res) => {
+        res.send('Thanks for voting!');
+    })
+
     app.post('/api/surveys/webhooks', (req, res) => {
         const p = new Path('/api/surveys/:surveyId/:choice');
-        const events = _.chain(req.body)
+        _.chain(req.body)
             .map(({ email, url, event }) => {
                 const match = p.test(new URL(url).pathname);
                 if (match && event === 'click') {
@@ -22,8 +26,22 @@ module.exports = app => {
             })
             .compact() //удаляет все undefined элементы массива
             .uniqBy('email', 'surveyId') //получить уникальные элементы по указанным ключам
+            .each(event => {
+                Survey.updateOne({
+                    _id: event.surveyId, // найти survey с id == surveyId, который имеет recipients:
+                    recipients: {
+                        $elemMatch: { email: event.email, responded: false } //перебрать всех recipients ($elemMatch) и найти подходящего по условиям
+                    }   // если survey, подходящий по всем условиям был найден, обновить его в соответствии со 2-ым объектом:
+                }, {
+                        $inc: { [event.choice]: 1 },
+                        //найти свойство choice (= 'yes' / 'no' в данном случае) и увеличить ($inc) его на 1; 
+                        //грубо говоря survey['yes'] += 1; key interpolation es2016
+                        $set: { 'recipients.$.responded': true },
+                        //установить ($set) у найденного ранее recipient в найденном survey свойство responded на true
+                        lastResponded: new Date()
+                    }).exec();
+            })
             .value();
-        console.log(events);
         res.send({ message: 'OK' });
     });
 
