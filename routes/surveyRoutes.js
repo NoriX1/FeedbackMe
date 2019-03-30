@@ -11,6 +11,15 @@ const Survey = mongoose.model('surveys');
 
 module.exports = app => {
 
+    app.delete('/api/surveys/', requireLogin, async (req, res) => {
+        try {
+            await Survey.deleteOne({ _id: req.body.surveyId });
+            res.send({});
+        } catch (err) {
+            res.status(501).send(err);
+        }
+    })
+
     app.get('/api/surveys', requireLogin, async (req, res) => {
         const surveys = await Survey.find({ _user: req.user.id })
             .select({ recipients: false }) // исключить из результата recipients
