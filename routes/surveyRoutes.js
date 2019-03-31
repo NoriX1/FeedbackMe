@@ -1,3 +1,6 @@
+const _ = require('lodash');
+const { Path } = require('path-parser');
+const { URL } = require('url');
 const mongoose = require('mongoose');
 const requireLogin = require('../middlewares/requireLogin');
 const requireCredits = require('../middlewares/requireCredits');
@@ -7,6 +10,57 @@ const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 const Survey = mongoose.model('surveys');
 
 module.exports = app => {
+
+    app.delete('/api/surveys/', requireLogin, async (req, res) => {
+        try {
+            await Survey.deleteOne({ _id: req.body.surveyId });
+            res.send({});
+        } catch (err) {
+            res.status(501).send(err);
+        }
+    })
+
+    app.get('/api/surveys', requireLogin, async (req, res) => {
+        const surveys = await Survey.find({ _user: req.user.id })
+            .select({ recipients: false }) // исключить из результата recipients
+
+        res.send(surveys);
+    });
+
+    app.get('/api/surveys/:surveyId/:choice', (req, res) => {
+        res.send('Thanks for voting!');
+    })
+
+    app.post('/api/surveys/webhooks', (req, res) => {
+        const p = new Path('/api/surveys/:surveyId/:choice');
+        _.chain(req.body)
+            .map(({ email, url, event }) => {
+                const match = p.test(new URL(url).pathname);
+                if (match && event === 'click') {
+                    return { email, surveyId: match.surveyId, choice: match.choice };
+                }
+            })
+            .compact() //удаляет все undefined элементы массива
+            .uniqBy('email', 'surveyId') //получить уникальные элементы по указанным ключам
+            .each(event => {
+                Survey.updateOne({
+                    _id: event.surveyId, // найти survey с id == surveyId, который имеет recipients:
+                    recipients: {
+                        $elemMatch: { email: event.email, responded: false } //перебрать всех recipients ($elemMatch) и найти подходящего по условиям
+                    }   // если survey, подходящий по всем условиям был найден, обновить его в соответствии со 2-ым объектом:
+                }, {
+                        $inc: { [event.choice]: 1 },
+                        //найти свойство choice (= 'yes' / 'no' в данном случае) и увеличить ($inc) его на 1; 
+                        //грубо говоря survey['yes'] += 1; key interpolation es2016
+                        $set: { 'recipients.$.responded': true },
+                        //установить ($set) у найденного ранее recipient в найденном survey свойство responded на true
+                        lastResponded: new Date()
+                    }).exec();
+            })
+            .value();
+        res.send({ message: 'OK' });
+    });
+
     app.post('/api/surveys', requireLogin, requireCredits, async (req, res) => {
         const { title, subject, body, recipients } = req.body;
 
