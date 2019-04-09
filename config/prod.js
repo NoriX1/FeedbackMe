@@ -6,5 +6,9 @@ module.exports = {
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     sendGridKey: process.env.SEND_GRID_KEY,
-    redirectDomain: process.env.REDIRECT_DOMAIN
+    redirectDomain: process.env.REDIRECT_DOMAIN,
+    yandexAppID: process.env.YANDEX_APP_ID,
+    yandexSecretKey: process.env.YANDEX_SECRET,
+    yandexRedirect: process.env.YANDEX_REDIRECT
+
 }
