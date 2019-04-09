@@ -18,6 +18,7 @@
   "author": "NoriX",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.6.2",
     "body-parser": "^1.18.3",
     "concurrently": "^4.1.0",
     "cookie-session": "^1.3.3",
@@ -31,6 +32,7 @@
     "passport-google-oauth20": "^2.0.0",
     "path-parser": "^4.2.0",
     "sendgrid": "^5.2.3",
-    "stripe": "^6.28.0"
+    "stripe": "^6.28.0",
+    "yandex-money-sdk": "^0.1.7"
   }
 }
