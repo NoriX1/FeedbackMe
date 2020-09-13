@@ -3,7 +3,6 @@ const stripe = require('stripe')(keys.stripeSecretKey);
 const requireAuth = require('../middlewares/requireAuth');
 const yandexMoney = require('yandex-money-sdk');
 const url = require('url');
-const async = require('async');
 
 module.exports = app => {
   app.post('/api/stripe', requireAuth, async (req, res) => {
@@ -17,69 +16,75 @@ module.exports = app => {
       req.user.credits += 5;
       const user = await req.user.save();
       res.send(user);
-    } catch (e) {
-      res.status(400).send({ error: 'Error with payment. Please, try later!' })
+    } catch (err) {
+      res.status(400).send({ error: `Error with payment. Please, try later! "${err.message}"` });
     }
   });
 
-  app.get('/api/yandex', requireAuth, (req, res) => {
+  app.get('/api/yandex', requireAuth, async (req, res) => {
     if (!req.user.yandexInstanceId) {
-      yandexMoney.ExternalPayment.getInstanceId(keys.yandexAppID, (err, data) => {
-        if (err) { res.status(500).send({ 'Error': err }); }
-        req.user.yandexInstanceId = data.instance_id;
-        req.user.save();
+      yandexMoney.ExternalPayment.getInstanceId(keys.yandexAppID, async (err, { instance_id }) => {
+        if (err) {
+          return res.status(400).send({ error: err.message });
+        }
+        req.user.yandexInstanceId = instance_id;
+        await req.user.save();
       });
     }
+
     const externalPayment = new yandexMoney.ExternalPayment(req.user.yandexInstanceId);
     const requestOptions = {
-      pattern_id: 'p2p',
+      pattern_id: "p2p",
       to: 41001761989364,
-      amount_due: 1,
-      message: '1RUB for 1 credit'
-    }
+      amount_due: keys.yandexPaymentAmount,
+      message: `${keys.yandexPaymentAmount} RUB for 5 credit`
+    };
 
     externalPayment.request(requestOptions, (err, data) => {
-      if (err) { res.status(500).send({ 'Error': err }); }
+      if (err) {
+        return res.status(400).send({ error: err.message });
+      }
+
+      if (data.error === 'illegal_param_instance_id') {
+        req.user.yandexInstanceId = '';
+        req.user.save();
+      }
+
       const processOptions = {
         request_id: data.request_id,
         ext_auth_success_uri: keys.redirectDomain + '/yandex/success',
         ext_auth_fail_uri: keys.redirectDomain + '/yandex/fail'
-      }
-      externalPayment.process(processOptions, async (err, data) => {
-        if (err) { res.status(500).send({ 'Error': err }); }
-        res.redirect(url.format({
-          pathname: data.acs_uri,
-          query: data.acs_params
-        }));
-        checkPaymentStatus(processOptions, (result) => {
-          if (result.status === 'success') {
+      };
+
+      let requestCount = 0;
+      setTimeout(function callProcess() {
+        externalPayment.process(processOptions, (err, data) => {
+          requestCount++;
+          if (requestCount > 100) {
+            return;
+          }
+          if (data.acs_params && data.acs_uri && requestCount === 1) {
+            res.redirect(url.format({
+              pathname: data.acs_uri,
+              query: data.acs_params
+            }));
+            return setTimeout(callProcess, 5000);
+          }
+          if (err) {
+            return res.status(400).send({ error: err.message });
+          }
+          if (data.status === 'ext_auth_required' || data.status === 'in_progress') {
+            return setTimeout(callProcess, 5000);
+          }
+          if (data.status === 'success') {
             req.user.credits += 5;
             req.user.save();
           }
-        });
-      });
+          if (data.status === 'refused') {
+            return res.redirect(keys.redirectDomain + '/yandex/fail');
+          }
+        })
+      }, 5000);
     });
   });
 };
-
-function checkPaymentStatus(options, done) {
-  const externalPayment = new yandexMoney.ExternalPayment(options.instance_id);
-  let response = null;
-  async.whilst(
-    function () {
-      if (response === null ||
-        response.status === 'ext_auth_required' ||
-        response.status === 'in_progress') { return true; }
-      return false;
-    },
-    function checkStatus(callback) {
-      externalPayment.process(options, (err, data) => {
-        response = data;
-        setTimeout(callback, 3000);
-      });
-    },
-    function complete(err) {
-      done(response);
-    }
-  )
-}

@@ -8,6 +8,7 @@ module.exports = {
   sendGridKey: process.env.SEND_GRID_KEY,
   redirectDomain: process.env.REDIRECT_DOMAIN,
   yandexAppID: process.env.YANDEX_APP_ID,
-  yandexSecretKey: process.env.YANDEX_SECRET
+  yandexSecretKey: process.env.YANDEX_SECRET,
+  yandexPaymentAmount: process.env.YANDEX_PAYMENT_AMOUNT
 
 }
