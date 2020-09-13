@@ -10,27 +10,29 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser((id, done) => {
-  User.findById(id).then(user => {
-    done(null, user);
+  User.findById(id, (err, user) => {
+    if (err) {
+      return done(err, false);
+    }
+    return done(null, user);
   });
 });
 
-passport.use(new GoogleStrategy(
-  {
-    clientID: keys.googleClientID,
-    clientSecret: keys.googleClientSecret,
-    callbackURL: '/auth/google/callback',
-    proxy: true
-  },
-  async (accesToken, refreshToken, profile, done) => {
-    const existingUser = await User.findOne({ googleId: profile.id })
+passport.use(new GoogleStrategy({
+  clientID: keys.googleClientID,
+  clientSecret: keys.googleClientSecret,
+  callbackURL: '/auth/google/callback',
+  proxy: true
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const existingUser = await User.findOne({ googleId: profile.id });
     if (existingUser) {
-      // we already have a record with the given profile ID
-      done(null, existingUser);
-    } else {
-      // we don`t have a user record with this ID, make a new record
-      const user = await new User({ googleId: profile.id }).save()
-      done(null, user);
+      return done(null, existingUser);
     }
+    const savedUser = await new User({ googleId: profile.id }).save();
+    return done(null, savedUser);
+  } catch (err) {
+    done(err, false);
   }
-));
+
+}));

@@ -1,24 +1,28 @@
 const keys = require('../config/keys');
 const stripe = require('stripe')(keys.stripeSecretKey);
-const requireLogin = require('../middlewares/requireLogin');
+const requireAuth = require('../middlewares/requireAuth');
 const yandexMoney = require('yandex-money-sdk');
 const url = require('url');
 const async = require('async');
 
 module.exports = app => {
-  app.post('/api/stripe', requireLogin, async (req, res) => {
-    const charge = await stripe.charges.create({
-      amount: 500,
-      currency: 'usd',
-      description: '5$ fot 5 credits',
-      source: req.body.id
-    });
-    req.user.credits += 5;
-    const user = await req.user.save();
-    res.send(user);
+  app.post('/api/stripe', requireAuth, async (req, res) => {
+    try {
+      await stripe.charges.create({
+        amount: req.body.amount,
+        currency: 'usd',
+        description: '5$ fot 5 credits',
+        source: req.body.id
+      });
+      req.user.credits += 5;
+      const user = await req.user.save();
+      res.send(user);
+    } catch (e) {
+      res.status(400).send({ error: 'Error with payment. Please, try later!' })
+    }
   });
 
-  app.get('/api/yandex', requireLogin, (req, res) => {
+  app.get('/api/yandex', requireAuth, (req, res) => {
     if (!req.user.yandexInstanceId) {
       yandexMoney.ExternalPayment.getInstanceId(keys.yandexAppID, (err, data) => {
         if (err) { res.status(500).send({ 'Error': err }); }
