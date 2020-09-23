@@ -1,10 +1,10 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { fetchSurveys, deleteSurvey } from '../../actions';
+import { fetchSurveysRequest, deleteSurveyRequest } from '../../actions';
 
 class SurveyList extends React.Component {
   componentDidMount() {
-    this.props.fetchSurveys();
+    this.props.fetchSurveysRequest();
   }
 
   renderSurveys = () => {
@@ -14,6 +14,7 @@ class SurveyList extends React.Component {
           <div className="card-content">
             <span className="card-title">{survey.title}</span>
             <p>{survey.body}</p>
+            <p style={{ fontStyle: 'italic' }}>{survey.description || ''}</p>
             <p className="right">Sent On: {new Date(survey.dateSent).toLocaleDateString()}</p>
             <br />
             <p className="right">
@@ -29,7 +30,7 @@ class SurveyList extends React.Component {
             <button
               className="red right btn-flat white-text"
               style={{ marginTop: '-5px' }}
-              onClick={() => { this.props.deleteSurvey(survey._id) }}
+              onClick={() => { this.props.deleteSurveyRequest(survey._id) }}
             >Delete</button>
           </div>
         </div>
@@ -46,4 +47,4 @@ function mapStateToProps(state) {
   return { surveys: Object.values(state.surveys) };
 }
 
-export default connect(mapStateToProps, { fetchSurveys, deleteSurvey })(SurveyList);
+export default connect(mapStateToProps, { fetchSurveysRequest, deleteSurveyRequest })(SurveyList);

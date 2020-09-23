@@ -6,7 +6,7 @@ import Header from './Header';
 import Dashboard from './Dashboard';
 import SurveyNew from './surveys/SurveyNew';
 import Landing from './Landing';
-import { fetchUser } from '../actions';
+import { fetchUserRequest } from '../actions';
 import history from '../history';
 import PaymentSuccess from './payments/PaymentSuccess';
 import PaymentFail from './payments/PaymentFail';
@@ -14,7 +14,7 @@ import PaymentFail from './payments/PaymentFail';
 class App extends React.Component {
 
   componentDidMount() {
-    this.props.fetchUser();
+    this.props.fetchUserRequest();
   }
 
   render() {
@@ -33,4 +33,4 @@ class App extends React.Component {
   }
 }
 
-export default connect(null, { fetchUser })(App);
+export default connect(null, { fetchUserRequest })(App);
