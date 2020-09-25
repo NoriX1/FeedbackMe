@@ -1,34 +1,41 @@
-import _ from 'lodash';
 import React from 'react';
 import { connect } from 'react-redux';
-
-import FIELDS from './formFields';
-import * as actions from '../../actions';
+import formFields from './formFields';
+import { submitSurveyRequest } from '../../actions';
 
 const SurveyFormReview = (props) => {
-    const reviewFields = _.map(FIELDS, field => {
-        return (
-            <div key={field.name}>
-                <label>{field.label}</label>
-                <div>{props.formValues[field.name]}</div>
-            </div>
-        );
-    });
+
+  const reviewFields = formFields.map(({ name, label }) => {
     return (
-        <div>
-            <h5>Please, confirm your entries</h5>
-            {reviewFields}
-            <button className="yellow darken-3 white-text btn-flat" onClick={props.onCancel}>Back</button>
-            <button className="green btn-flat right white-text" onClick={() => props.submitSurvey(props.formValues, props.history)}>
-                <span>Send Survey</span>
-                <i className="material-icons right">email</i>
-            </button>
-        </div>
+      <div key={name}>
+        <label>{label}</label>
+        <div>{props.formValues[name]}</div>
+      </div>
     );
+  });
+
+  return (
+    <div>
+      <h5>Please confirm you entries</h5>
+      <div>
+        {reviewFields}
+      </div>
+      <button
+        className="yellow darken-4 white-text btn-flat"
+        onClick={props.onCancel}
+      >Back</button>
+      <button className="green btn-flat right" onClick={() => props.submitSurveyRequest(props.formValues)}>
+        <span className="white-text">Send Survey</span>
+        <i className="material-icons white-text right">email</i>
+      </button>
+    </div>
+  );
 };
 
-const mapStateToProps = (state) => {
-    return { formValues: state.form.surveyForm.values };
+function mapStateToProps(state) {
+  return {
+    formValues: state.form.surveyForm.values
+  };
 }
 
-export default connect(mapStateToProps, actions)(SurveyFormReview);
+export default connect(mapStateToProps, { submitSurveyRequest })(SurveyFormReview);

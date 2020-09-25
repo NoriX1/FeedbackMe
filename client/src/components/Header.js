@@ -5,47 +5,41 @@ import Payments from './Payments';
 
 class Header extends React.Component {
 
-    renderContent() {
-        switch (this.props.auth) {
-            case null:
-                return;
-            case false:
-                return (
-                    <li>
-                        <a href="/auth/google">Login With Google</a>
-                    </li>
-                );
-            default:
-                return (
-                    <React.Fragment>
-                        <li>
-                            <Payments />
-                        </li>
-                        <li style={{margin: '0px 10px'}}>Credits: {this.props.auth.credits}</li>
-                        <li>
-                            <a href="/api/logout">Logout</a>
-                        </li>
-                    </React.Fragment>
-                );
-        }
-    }
-
-    render() {
+  renderContent() {
+    switch (this.props.auth) {
+      case null:
+        return null;
+      case false:
+        return <li><a href="/auth/google">Login With Google</a></li>;
+      default:
         return (
-            <nav style={{ backgroundColor: '#6eb9ee' }}>
-                <div className="nav-wrapper">
-                    <Link to={this.props.auth ? '/surveys' : '/'} className="left brand-logo">FeedbackMe</Link>
-                    <ul className="right">
-                        {this.renderContent()}
-                    </ul>
-                </div>
-            </nav>
+          <React.Fragment>
+            <li><Payments /></li>
+            <li style={{ margin: '0px 10px' }}>Credits: {this.props.auth.credits}</li>
+            <li><a href="/api/logout">Logout</a></li>
+          </React.Fragment>
         );
     }
+  }
+
+  render() {
+    return (
+      <nav style={{ backgroundColor: '#6eb9ee' }}>
+        <div className="nav-wrapper">
+          <Link
+            to={this.props.auth ? '/surveys' : '/'}
+            className="left brand-logo"
+            style={{ marginLeft: "15px" }}
+          >feedback.io</Link>
+          <ul className="right">{this.renderContent()}</ul>
+        </div>
+      </nav>
+    );
+  }
 }
 
 const mapStateToProps = ({ auth }) => {
-    return { auth };
+  return { auth };
 }
 
 export default connect(mapStateToProps)(Header);
